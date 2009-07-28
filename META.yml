@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               File-Namaste
-version:            0.12
+version:            0.13
 abstract:           routines for NAMe-AS-TExt tags (V0.1)
 author:
     - John A. Kunze <jak@ucop.edu>

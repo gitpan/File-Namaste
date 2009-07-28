@@ -6,7 +6,7 @@ WriteMakefile(
     EXE_FILES		=> [ 'nam' ],
     NAME                => 'File::Namaste',
     AUTHOR              => 'John A. Kunze <jak@ucop.edu>',
-    VERSION_FROM        => 'lib/File/Namaste.pm',
+    VERSION_FROM        => 'VERSION',
     ABSTRACT_FROM       => 'lib/File/Namaste.pm',
     ($ExtUtils::MakeMaker::VERSION >= 6.3002
       ? ('LICENSE'=> 'Apache2')
