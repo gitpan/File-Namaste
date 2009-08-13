@@ -1,10 +1,17 @@
-#!/usr/bin/perl -Ilib
+#!/bin/sh
+#! -*- perl -*-
+eval 'exec perl -x -S $0 ${1+"$@"} ;'
+	if 0;
+# Above lines are for portable Perl startup honoring PATH and emacs.  Don't
+# change lightly.  Options may be inserted before "-x".  For background see
+# "perldoc perlrun" and http://cr.yp.to/slashpackage/studies/findingperl/7 .
+# Developers may need to run as "perl -x -Mblib ..." or "perl -x -Ilib ...".
 
 use strict;
 use warnings;
 
 my $VERSION;
-$VERSION = sprintf "%d.%02d", q$Revision: 0.12 $ =~ /(\d+)/g;
+$VERSION = sprintf "%d.%02d", q$Revision: 0.14 $ =~ /(\d+)/g;
 
 # nam - get and set Namaste tags
 #
@@ -14,8 +21,8 @@ use Getopt::Long qw(:config bundling_override);
 use Pod::Usage;
 
 use File::Namaste;
-use File::Value;
 use File::ANVL;
+use File::ERC;
 
 my %opt = (
 	help		=> 0,
@@ -25,8 +32,6 @@ my %opt = (
 	format		=> 0,
 	verbose		=> 0,
 );
-
-my $format = FMT_PLAIN;		# default
 
 # main
 {
@@ -48,18 +53,11 @@ my $format = FMT_PLAIN;		# default
 	@ARGV > 0 or
 		pod2usage("$0: not enough arguments");
 
-	if ($opt{directory}) {
-		chdir($opt{directory}) or
-			pod2usage("$opt{directory}: $!");
-	}
-	if ($opt{format}) {
-		if    ($opt{format} eq "anvl")	{ $format = FMT_ANVL; }
-		elsif ($opt{format} eq "xml")	{ $format = FMT_XML; }
-		elsif ($opt{format} eq "plain")	{ $format = FMT_PLAIN; }
-		else {
-		  pod2usage("$0: $opt{format}: unrecognized format argument");
-		}
-	}
+	my $om = "om_" .		# initialize output multiplexor
+		($opt{format} || "plain");
+	defined(&$om)	or pod2usage("$0: unknown format: $opt{format}");
+
+	my $dir = $opt{directory} || "";
 
 	my $cmd = lc(shift @ARGV);
 	my ($num, $fname, $fvalue, $msg, @nnv);
@@ -68,49 +66,41 @@ my $format = FMT_PLAIN;		# default
 	if ($cmd eq "add") {	# easiest, since don't need to check existence
 		@ARGV > 1 or
 			pod2usage("$cmd: needs at least two arguments");
-		($msg = set_namaste(@ARGV))
-			and die($msg);
-			# XXXXX Carp?
+		($msg = set_namaste($dir, @ARGV)) and
+			die $msg;
 		exit 0;
 	}
 
-	if (($delete = $cmd eq "del") || $cmd eq "set") {
+	if (($delete = $cmd eq "rm") || $cmd eq "set") {
 
 		pod2usage("$cmd what? (more arguments needed)")
 			if (@ARGV == 0);
 
 		# same args for command as for get_namaste()
-		@nnv = ($delete ? get_namaste(@ARGV)	# delete all args or
-			: get_namaste($ARGV[0]));	# just 1st for "set"
+		@nnv = ($delete
+			? get_namaste($dir, @ARGV)	# delete all args or
+			: get_namaste($dir, $ARGV[0]));	# just 1st for "set"
 		# @nnv may contain multiple tags (even for "set") to delete
 
-		while (defined($num = shift(@nnv))) {
-			$fname = shift(@nnv);
-			$fvalue = shift(@nnv);
+		while (defined($num = shift @nnv)) {
+			$fname = shift @nnv;
+			$fvalue = shift @nnv;
 			unlink($fname) or
 				print STDERR "$fname: $!";
-
-			# XXXXX map nums to kernel tags (1->who, etc)
-			#     different kinds of output, eg, XML
-			#om($format, DATA, num2dk($num), $fvalue);
-			#$opt{verbose} and
-			#	om($format, NOTE, "file", $fname);
 		}
-		if (! $delete) {			# "set" case
-			($msg = set_namaste(@ARGV))
-				and die($msg);
-				# XXXXX Carp?
-		}
+		$delete and		exit 0;		# since we're done
+		($msg = set_namaste($dir, @ARGV)) and	# "set" case
+			die $msg;
 		exit 0;
 	}
 
-	if (($delete = $cmd eq "delall") || $cmd eq "get") {
+	if (($delete = $cmd eq "rmall") || $cmd eq "get") {
 
 		# same args for command as for get_namaste()
-		@nnv = get_namaste(@ARGV);
-		while (defined($num = shift(@nnv))) {
-			$fname = shift(@nnv);
-			$fvalue = shift(@nnv);
+		@nnv = get_namaste($dir, @ARGV);
+		while (defined($num = shift @nnv)) {
+			$fname = shift @nnv;
+			$fvalue = shift @nnv;
 			if ($delete) {		# we're doing a delete
 				unlink($fname) or
 					print STDERR "$fname: $!";
@@ -118,9 +108,12 @@ my $format = FMT_PLAIN;		# default
 			}
 			# XXXXX map nums to kernel tags (1->who, etc)
 			#     different kinds of output, eg, XML
-			om($format, DATA, num2dk($num), $fvalue);
+			no strict 'refs';               # permits next call
+			print &$om(DATA,
+				($num == 0 ? "dir_type" : num2dk($num)),
+				$fvalue);
 			$opt{verbose} and
-				om($format, NOTE, "file", $fname);
+				print &$om(NOTE, "file", $fname);
 		}
 		exit 0;
 	}
@@ -137,7 +130,7 @@ __END__
 
 =head1 NAME
 
-nam - set, get, and delete Namaste tag files
+nam - set, get, and remove Namaste tag files
 
 =head1 SYNOPSIS
 
@@ -145,9 +138,9 @@ nam - set, get, and delete Namaste tag files
 
 =item B<nam> [B<-vh>] [B<-m> I<fmt>] [B<-d> I<dir>] B<set|add> I<integer> I<string> [[I<maxlen>] I<ellipsis>]
 
-=item B<nam> [B<-vh>] [B<-m> I<fmt>] [B<-d> I<dir>] B<get|del> [I<integer> ...]
+=item B<nam> [B<-vh>] [B<-m> I<fmt>] [B<-d> I<dir>] B<get|rm> [I<integer> ...]
 
-=item B<nam> [B<-vh>] [B<-m> I<fmt>] [B<-d> I<dir>] B<delall>
+=item B<nam> [B<-vh>] [B<-m> I<fmt>] [B<-d> I<dir>] B<rmall>
 
 =back
 
@@ -194,7 +187,7 @@ Print the current version number and exit.
   nam set 1 'Mark Twain'
   nam set 2 'Adventures of Huckleberry Finn' 13m
   nam get
-  nam delall
+  nam rmall
 
 =head1 SEE ALSO
 

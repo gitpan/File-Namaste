@@ -16,10 +16,14 @@ WriteMakefile(
     },
     PL_FILES            => {},
     PREREQ_PM => {
-        'Test::More'	=> 0,
-        'File::Value'	=> 0,
-        'File::ANVL'	=> 0,
+	'Getopt::Long'	=> 0,
+	'Pod::Usage'	=> 0,
+	'File::ANVL'	=> 0,
+	'File::ERC'	=> 0,
+	'File::Spec'	=> 0,
+	'File::Value'	=> 0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'File-Namaste-*' },
 );
+

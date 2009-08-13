@@ -1,126 +1,61 @@
-#########################
-
-use Test::More tests => 45;		# adjust number after adding tests
-
-use strict;
+# XXXX most portable to just use the number of tests???
+use Test::More qw( no_plan );
 use warnings;
-use File::Namaste;
-use File::Value;
-use File::ANVL;
+use strict;
+
+my $script = "nam";		# script we're testing
+
+#### start boilerplate for script name and temporary directory support
+
+my $td = "td_$script";		# temporary test directory named for script
+# Depending on how circs, use blib, but prepare to use lib as fallback.
+my $blib = (-e "blib" || -e "../blib" ?	"-Mblib" : "-Ilib");
+my $bin = ($blib eq "-Mblib" ?		# path to testable script
+	"blib/script/" : "") . $script;
+my $cmd = "2>&1 perl -x $blib " .	# command to run, capturing stderr
+	(-x $bin ? $bin : "../$bin") . " ";	# exit status will be in "$?"
+
+
 use File::Path;
-
-my $t = "namaste_test";
-#$ENV{'SHELL'} = "/bin/sh";
-
-#########################
-
-{	# file_value tests
-
-mkdir $t;
-my $x = '   /hi;!echo *; e/fred/foo/pbase        ';
-my $y;
-
-is file_value(">$t/fvtest", $x), "", 'write returns ""';
-
-is file_value("<$t/fvtest", $y, "raw"), "", 'read returns ""';
-
-is $x, $y, 'raw read of what was written';
-
-my $z = (-s "$t/fvtest");
-is $z, length($x), "all bytes written";
-
-file_value("<$t/fvtest", $x);
-is $x, '/hi;!echo *; e/fred/foo/pbase', 'default trim';
-
-file_value("<$t/fvtest", $x, "trim");
-is $x, '/hi;!echo *; e/fred/foo/pbase', 'explicit trim';
-
-file_value("<$t/fvtest", $x, "untaint");
-is $x, 'hi', 'untaint test';
-
-file_value("<$t/fvtest", $x, "trim", 0);
-is $x, '/hi;!echo *; e/fred/foo/pbase', 'trim, unlimited';
-
-file_value("<$t/fvtest", $x, "trim", 12);
-is $x, '/hi;!echo', 'trim, max 12';
-
-file_value("<$t/fvtest", $x, "trim", 12000);
-is $x, '/hi;!echo *; e/fred/foo/pbase', 'trim, max 12000';
-
-like file_value("<$t/fvtest", $x, "foo"), '/must be one of/',
-'error message test';
-
-like file_value("$t/fvtest", $x),
-'/file .*fvtest. must begin.*/', 'force use of >, <, or >>';
-
-is file_value(">$t/Whoa\\dude:!
-  Adventures of HuckleBerry Finn", "dummy"), "", 'write to weird filename';
-
-rmtree($t);
-
+sub mk_td {				# make $td with possible cleanup
+	rm_td()		if (-e $td);
+	mkdir($td)	or die("$td: couldn't mkdir: $!");
+}
+sub rm_td {				# to remove $td without big stupidity
+	die("bad dirname \$td=$td")		if (! $td or $td eq ".");
+	eval { rmtree($td); };
+	die("$td: couldn't remove: $@")		if ($@);
 }
 
-#########################
+#### end boilerplate
 
-{	# elide tests
+use File::Namaste;
 
-is elide("abcdefghi"), "abcdefghi", 'simple no-op';
+{ 	# Namaste.pm tests
 
-is elide("abcdefghijklmnopqrstuvwxyz", "7m", ".."),
-"ab..xyz", 'truncate explicit, middle';
-
-is elide("abcdefghijklmnopqrstuvwxyz"),
-"abcdefghijklmn..", 'truncate implicit, end';
-
-is elide("abcdefghijklmnopqrstuvwxyz", 22),
-"abcdefghijklmnopqrst..", 'truncate explicit, end';
-
-is elide("abcdefghijklmnopqrstuvwxyz", 22, ".."),
-"abcdefghijklmnopqrst..", 'truncate explicit, end, explicit ellipsis';
-
-is elide("abcdefghijklmnopqrstuvwxyz", "22m"),
-"abcdefghi...qrstuvwxyz", 'truncate explicit, middle';
-
-is elide("abcdefghijklmnopqrstuvwxyz", "22m", ".."),
-"abcdefghij..qrstuvwxyz", 'truncate explicit, middle, explicit ellipsis';
-
-is elide("abcdefghijklmnopqrstuvwxyz", "22s"),
-"..ghijklmnopqrstuvwxyz", 'truncate explicit, start';
-
-# XXXX this +4% test isn't really implemented
-is elide("abcdefghijklmnopqrstuvwxyz", "22m+4%", "__"),
-"abcdefghij__qrstuvwxyz", 'truncate explicit, middle, alt. ellipsis';
-
-}
-
-#########################
-
-{ 	# namaste tests
-
-mkdir $t;
-chdir $t;
+mk_td();
 
 my $namy = "noid_0.6";
-is set_namaste(0, "pairtree_0.3"), "", 'short namaste tag';
-is set_namaste(0, $namy), "", 'second, repeating namaste tag';
+is set_namaste($td, 0, "pairtree_0.3"), "", 'short namaste tag';
+is set_namaste($td, 0, $namy), "", 'second, repeating namaste tag';
 
 my $namx = "Whoa/dude:!
   Adventures of HuckleBerry Finn";
 
-is set_namaste(1, $namx), "", 'longer stranger tag';
+is set_namaste($td, 1, $namx), "", 'longer stranger tag';
 
-my @namtags = get_namaste();
+my @namtags = get_namaste($td);
 ok scalar(@namtags) eq 9, 'got correct number of tags';
 
 is $namtags[8], $namx, 'read back longer stranger tag';
 
-is scalar(get_namaste("9")), "0", 'no matching tags';
+is scalar(get_namaste($td, "9")), "0", 'no matching tags';
 
-@namtags = get_namaste("0");
+@namtags = get_namaste($td, "0");
 is $namtags[2], $namy, 'read repeated namaste tag, which glob sorts first';
 
 my ($num, $fname, $fvalue, @nums);
-@namtags = get_namaste();
+@namtags = get_namaste($td);
 while (defined($num = shift(@namtags))) {
 	$fname = shift(@namtags);
 	$fvalue = shift(@namtags);
@@ -129,80 +64,79 @@ while (defined($num = shift(@namtags))) {
 }
 is join(", ", @nums), "0, 0, 1", 'tag num sequence extracted from array';
 
-is scalar(get_namaste()), "0", 'tags all unlinked';
+is scalar(get_namaste($td)), "0", 'tags all unlinked';
 
 #XXX need lots more tests
 
-chdir("..");
-rmtree($t);
+rm_td();
 
 }
 
-#########################
-
 { 	# nam tests
 # XXX need more -m tests
+# xxx need -d tests
+mk_td();
+$cmd .= " -d $td ";
 
-my $this_dir = ".";
-my $nam_bin = "blib/script/nam";
-my $nam_cmd = (-x $nam_bin ? $nam_bin : "../$nam_bin") . " -d $this_dir ";
-my ($x);
+my $x;
 
-$x = `$nam_cmd delall`;
-is $x, "", 'nam delall to clean out test dir';
+$x = `$cmd rmall`;
+is $x, "", 'nam rmall to clean out test dir';
 
-$x = `$nam_cmd set 0 foo`;
+$x = `$cmd set 0 foo`;
 chop($x);
 is $x, "", 'set of dir_type';
 
-#print "nam_cmd=$nam_cmd\n", `ls -t`;
+#print "nam_cmd=$cmd\n", `ls -t`;
 
-$x = `$nam_cmd get 0`;
+$x = `$cmd get 0`;
 chop($x);
 is $x, "foo", 'get of dir_type';
 
-$x = `$nam_cmd add 0 bar`;
+$x = `$cmd add 0 bar`;
 chop($x);
 is $x, "", 'set extra dir_type';
 
-$x = `$nam_cmd get 0`;
+$x = `$cmd get 0`;
 chop($x);
 is $x, "bar
 foo", 'get of two dir_types';
 
-$x = `$nam_cmd set 0 zaf`;
+$x = `$cmd set 0 zaf`;
 chop($x);
 is $x, "", 'clear old dir_types, replace with new';
 
-$x = `$nam_cmd get 0`;
+$x = `$cmd get 0`;
 chop($x);
 is $x, "zaf", 'get of one new dir_type';
 
-$x = `$nam_cmd set 1 'Mark Twain'`;
+$x = `$cmd set 1 'Mark Twain'`;
 chop($x);
 is $x, "", 'set of "who"';
 
-$x = `$nam_cmd get 1`;
+$x = `$cmd get 1`;
 chop($x);
 is $x, "Mark Twain", 'get of "who"';
 
-$x = `$nam_cmd set 2 'Adventures of Huckleberry Finn' 13m ___`;
+$x = `$cmd set 2 'Adventures of Huckleberry Finn' 13m ___`;
 chop($x);
 is $x, "", 'set of long "what" value, with elision';
 
-$x = `$nam_cmd get 2`;
+$x = `$cmd get 2`;
 chop($x);
 is $x, 'Adventures of Huckleberry Finn', 'get of long "what" value';
 
-$x = `$nam_cmd -vm anvl get 2`;
+$x = `$cmd -vm anvl get 2`;
 chop($x);
 like $x, '/2=Adven___ Finn/', 'get filename with "-m anvl" and -v comment';
 
-$x = `$nam_cmd --verbose --format xml get 2`;
+$x = `$cmd --verbose --format xml get 2`;
 chop($x);
 like $x, '/2=Adven___ Finn -->/', 'get with long options and "xml" comment';
 
-$x = `$nam_cmd delall`;
-is $x, "", 'final nam delall to clean out test dir';
+$x = `$cmd rmall`;
+is $x, "", 'final nam rmall to clean out test dir';
+
+rm_td();
 
 }
