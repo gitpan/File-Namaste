@@ -1,3 +1,4 @@
+use 5.000000;
 use strict;
 use warnings;
 use ExtUtils::MakeMaker;
@@ -18,10 +19,10 @@ WriteMakefile(
     PREREQ_PM => {
 	'Getopt::Long'	=> 0,
 	'Pod::Usage'	=> 0,
-	'File::ANVL'	=> 0,
-	'File::ERC'	=> 0,
+	'File::ANVL'	=> 0.15,
+	'File::ERC'	=> 0.01,
 	'File::Spec'	=> 0,
-	'File::Value'	=> 0,
+	'File::Value'	=> 0.15,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'File-Namaste-*' },

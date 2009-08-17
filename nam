@@ -11,7 +11,7 @@ use strict;
 use warnings;
 
 my $VERSION;
-$VERSION = sprintf "%d.%02d", q$Revision: 0.14 $ =~ /(\d+)/g;
+$VERSION = sprintf "%d.%02d", q$Revision: 0.15 $ =~ /(\d+)/g;
 
 # nam - get and set Namaste tags
 #
