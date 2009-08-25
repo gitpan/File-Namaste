@@ -7,11 +7,11 @@ eval 'exec perl -x -S $0 ${1+"$@"} ;'
 # "perldoc perlrun" and http://cr.yp.to/slashpackage/studies/findingperl/7 .
 # Developers may need to run as "perl -x -Mblib ..." or "perl -x -Ilib ...".
 
+use 5.006;
 use strict;
 use warnings;
 
-my $VERSION;
-$VERSION = sprintf "%d.%02d", q$Revision: 0.15 $ =~ /(\d+)/g;
+my $VERSION = $File::Namaste::VERSION;
 
 # nam - get and set Namaste tags
 #

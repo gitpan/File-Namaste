@@ -1,4 +1,4 @@
-use 5.000000;
+use 5.006;
 use strict;
 use warnings;
 use ExtUtils::MakeMaker;
@@ -13,16 +13,16 @@ WriteMakefile(
       ? ('LICENSE'=> 'Apache2')
       : ()),
     PM			=> {
-    	'lib/File/Namaste.pm' => 'blib/lib/File/Namaste.pm',
+	'lib/File/Namaste.pm'	=> 'blib/lib/File/Namaste.pm',
     },
     PL_FILES            => {},
     PREREQ_PM => {
 	'Getopt::Long'	=> 0,
 	'Pod::Usage'	=> 0,
-	'File::ANVL'	=> 0.15,
-	'File::ERC'	=> 0.01,
 	'File::Spec'	=> 0,
-	'File::Value'	=> 0.15,
+	'File::Value'	=> 0.16,
+	'File::ANVL'	=> 0.16,
+	'File::ERC'	=> 0.03,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'File-Namaste-*' },

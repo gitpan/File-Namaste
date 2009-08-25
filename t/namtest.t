@@ -1,7 +1,8 @@
-# XXXX most portable to just use the number of tests???
+use 5.006;
 use Test::More qw( no_plan );
-use warnings;
+
 use strict;
+use warnings;
 
 my $script = "nam";		# script we're testing
 

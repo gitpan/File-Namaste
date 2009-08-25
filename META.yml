@@ -1,7 +1,7 @@
 --- #YAML:1.0
 name:               File-Namaste
-version:            0.15
-abstract:           routines for NAMe-AS-TExt tags (V0.1)
+version:            0.16
+abstract:           routines for NAMe-AS-TExt tags
 author:
     - John A. Kunze <jak@ucop.edu>
 license:            Apache2
@@ -11,10 +11,10 @@ configure_requires:
 build_requires:
     ExtUtils::MakeMaker:  0
 requires:
-    File::ANVL:    0.15
-    File::ERC:     0.01
+    File::ANVL:    0.16
+    File::ERC:     0.03
     File::Spec:    0
-    File::Value:   0.15
+    File::Value:   0.16
     Getopt::Long:  0
     Pod::Usage:    0
 no_index:

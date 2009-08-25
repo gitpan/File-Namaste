@@ -1,6 +1,6 @@
 package File::Namaste;
 
-use 5.000000;
+use 5.006;
 use strict;
 use warnings;
 
@@ -8,7 +8,7 @@ require Exporter;
 our @ISA = qw(Exporter);
 
 our $VERSION;
-$VERSION = sprintf "%d.%02d", q$Name: Release-0-15 $ =~ /Release-(\d+)-(\d+)/;
+$VERSION = sprintf "%d.%02d", q$Name: Release-0-16 $ =~ /Release-(\d+)-(\d+)/;
 
 our @EXPORT = qw(
 	get_namaste set_namaste
@@ -121,7 +121,7 @@ __END__
 
 =head1 NAME
 
-File::Namaste - routines for NAMe-AS-TExt tags (V0.1)
+File::Namaste - routines to manage NAMe-AS-TExt tags
 
 =head1 SYNOPSIS
 
