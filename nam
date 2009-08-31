@@ -1,15 +1,17 @@
-#!/bin/sh
-#! -*- perl -*-
-eval 'exec perl -x -S $0 ${1+"$@"} ;'
-	if 0;
-# Above lines are for portable Perl startup honoring PATH and emacs.  Don't
-# change lightly.  Options may be inserted before "-x".  For background see
-# "perldoc perlrun" and http://cr.yp.to/slashpackage/studies/findingperl/7 .
-# Developers may need to run as "perl -x -Mblib ..." or "perl -x -Ilib ...".
+#!/usr/bin/perl
 
 use 5.006;
 use strict;
 use warnings;
+
+##!/bin/sh
+##! -*- perl -*-
+#eval 'exec perl -x -S $0 ${1+"$@"} ;'
+#	if 0;
+## Above lines are for portable Perl startup honoring PATH and emacs.  Don't
+## change lightly.  Options may be inserted before "-x".  For background see
+## "perldoc perlrun" and http://cr.yp.to/slashpackage/studies/findingperl/7 .
+## Developers may need to run as "perl -x -Mblib ..." or "perl -x -Ilib ...".
 
 my $VERSION = $File::Namaste::VERSION;
 

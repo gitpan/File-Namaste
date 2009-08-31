@@ -6,27 +6,37 @@ use warnings;
 
 my $script = "nam";		# script we're testing
 
+# as of 2009.08.27  (SHELL stuff, remake_td, Config perlpath)
 #### start boilerplate for script name and temporary directory support
 
-$ENV{'SHELL'} = "/bin/sh";
+use Config;
+$ENV{SHELL} = "/bin/sh";
 my $td = "td_$script";		# temporary test directory named for script
-# Depending on how circs, use blib, but prepare to use lib as fallback.
+# Depending on circs, use blib, but prepare to use lib as fallback.
 my $blib = (-e "blib" || -e "../blib" ?	"-Mblib" : "-Ilib");
 my $bin = ($blib eq "-Mblib" ?		# path to testable script
 	"blib/script/" : "") . $script;
-my $cmd = "2>&1 perl -x $blib " .	# command to run, capturing stderr
-	(-x $bin ? $bin : "../$bin") . " ";	# exit status will be in "$?"
+my $perl = $Config{perlpath} . $Config{_exe};	# perl used in testing
+my $cmd = "2>&1 $perl -x $blib " .	# command to run, capturing stderr
+	(-x $bin ? $bin : "../$bin") . " ";	# exit status in $? >> 8
 
+my ($rawstatus, $status);		# "shell status" version of "is"
+sub shellst_is { my( $expected, $output, $label )=@_;
+	$status = ($rawstatus = $?) >> 8;
+	$status != $expected and	# if not what we thought, then we're
+		print $output, "\n";	# likely interested in seeing output
+	return is($status, $expected, $label);
+}
 
 use File::Path;
-sub mk_td {				# make $td with possible cleanup
-	rm_td()		if (-e $td);
-	mkdir($td)	or die("$td: couldn't mkdir: $!");
+sub remake_td {		# make $td with possible cleanup
+	-e $td			and remove_td();
+	mkdir($td)		or die "$td: couldn't mkdir: $!";
 }
-sub rm_td {				# to remove $td without big stupidity
-	die("bad dirname \$td=$td")		if (! $td or $td eq ".");
+sub remove_td {		# remove $td but make sure $td isn't set to "."
+	! $td || $td eq "."	and die "bad dirname \$td=$td";
 	eval { rmtree($td); };
-	die("$td: couldn't remove: $@")		if ($@);
+	$@			and die "$td: couldn't remove: $@";
 }
 
 #### end boilerplate
@@ -35,7 +45,7 @@ use File::Namaste;
 
 { 	# Namaste.pm tests
 
-mk_td();
+remake_td();
 
 my $namy = "noid_0.6";
 is set_namaste($td, 0, "pairtree_0.3"), "", 'short namaste tag';
@@ -70,14 +80,14 @@ is scalar(get_namaste($td)), "0", 'tags all unlinked';
 
 #XXX need lots more tests
 
-rm_td();
+remove_td();
 
 }
 
 { 	# nam tests
 # XXX need more -m tests
 # xxx need -d tests
-mk_td();
+remake_td();
 $cmd .= " -d $td ";
 
 my $x;
@@ -139,6 +149,6 @@ like $x, '/2=Adven___ Finn -->/', 'get with long options and "xml" comment';
 $x = `$cmd rmall`;
 is $x, "", 'final nam rmall to clean out test dir';
 
-rm_td();
+remove_td();
 
 }

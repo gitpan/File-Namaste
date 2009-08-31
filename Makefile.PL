@@ -20,7 +20,7 @@ WriteMakefile(
 	'Getopt::Long'	=> 0,
 	'Pod::Usage'	=> 0,
 	'File::Spec'	=> 0,
-	'File::Value'	=> 0.16,
+	'File::Value'	=> 0.17,
 	'File::ANVL'	=> 0.16,
 	'File::ERC'	=> 0.03,
     },
