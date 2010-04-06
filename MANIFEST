@@ -4,6 +4,7 @@ Makefile.PL
 MANIFEST
 nam
 README
-t/namtest.t
+t/nam.t
+t/elide.t
 VERSION
 META.yml                                 Module meta-data (added by MakeMaker)

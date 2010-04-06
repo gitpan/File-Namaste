@@ -8,41 +8,77 @@ require Exporter;
 our @ISA = qw(Exporter);
 
 our $VERSION;
-$VERSION = sprintf "%d.%02d", q$Name: Release-0-17 $ =~ /Release-(\d+)-(\d+)/;
+$VERSION = sprintf "%d.%02d", q$Name: Release-0-20 $ =~ /Release-(\d+)-(\d+)/;
 
 our @EXPORT = qw(
-	get_namaste set_namaste
-);				# xxx more conservative export ??
+	nam_get nam_set nam_elide
+);				# yyy more conservative export ??
 our @EXPORT_OK = qw(
 );
 
-use File::Spec;
 use File::Value;
+use File::Spec;
 
-# xxx is this routine internal only?
-# XXX document which chars are eliminated
+# Default setting for tranformations is non-portable for Unix.
+our $portable_default = grep(/Win32|OS2/i, @File::Spec::ISA);
+
+# xxx not yet doing unicode or i18n
 # only first arg required
 # return tvalue given fvalue
-sub namaste_tvalue { my( $fvalue, $max, $ellipsis )=@_;
+sub nam_tvalue { my( $fvalue, $portable, $max, $ellipsis )=@_;
 
+	defined($portable)	or $portable = $portable_default;
 	my $tvalue = $fvalue;
-	$tvalue =~ s,/,\\,g;
-	$tvalue =~ s,\n+, ,g;
-	$tvalue =~ s,\p{IsC},?,g;
-	# XXX if (windows) s/badwinchars/goodwinchars/
-	# XXX eg, $s =~ tr[<>:"/?*][.]
-	# XXX not yet doing unicode or i18n
+	$tvalue =~ s,/,=,g;
+	$tvalue =~ s,\s+, ,g;
+	$tvalue =~ s,\p{IsC},?,g;	# control characters
 
-	my $xx = elide($tvalue, $max, $ellipsis);
-	return $xx;
-	#return elide($tvalue, $max, $ellipsis);
+	$portable and			# more portable (Win32) mapping
+		$tvalue =~ tr {"*/:<>?|\\}{.};
+
+	return nam_elide($tvalue, $max, $ellipsis);
 }
 
+# Ordered list of labels, mostly kernel element names
+#   yyy should this be coming from ERC module, or is that creating
+#   a big dependency hurdle for a sliver of functionality?
+our @namaste_labels = qw(
+	dir_type
+	who
+	what
+	when
+	where
+	how
+	why
+	huh
+);
+
+sub num2label { my $num = shift;
+
+	my $last = $#namaste_labels;
+	$num =~ s/^(\d+).*/$1/;				# forgive, eg, 3=foo
+	$num =~ /\D/ || $num < 0 || $num > $last and
+		return $namaste_labels[$last];		# last label
+		# last label doubles as unknown (huh?) if number is bad
+	return $namaste_labels[$num];			# normal return
+}
+
+# xxx should create shadow tag files with highly deterministic names?
+#     easier for a machine to fine a specific element
 my $dtname = ".dir_type";	# canonical name of directory type file
+# xxx .=dir_type
+# xxx .=how
+# xxx .=huh
+# xxx .=what
+# xxx .=when
+# xxx .=where
+# xxx .=who
+# xxx .=why
+
 
 # $num and $fvalue required
 # returns empty string on success, otherwise a diagnostic
-sub set_namaste { my( $dir, $num, $fvalue, $max, $ellipsis )=@_;
+sub nam_set { my( $dir, $portable, $num, $fvalue, $max, $ellipsis )=@_;
 
 	return 0
 		if (! defined($num) || ! defined($fvalue));
@@ -52,7 +88,7 @@ sub set_namaste { my( $dir, $num, $fvalue, $max, $ellipsis )=@_;
 		if $dir;		# (eg, slash) if there's a dir name
 
 	my $fname = $dir . $dtname;	# path to .dir_type, if needed
-	my $tvalue = namaste_tvalue($fvalue, $max, $ellipsis);
+	my $tvalue = nam_tvalue($fvalue, $portable, $max, $ellipsis);
 	# ".0" means set .dir_type also; "." means only set .dir_type
 	if ($num =~ s/^\.0/0/ || $num eq ".") {
 		# "append only" supports multi-typing in .dir_type, so
@@ -62,7 +98,8 @@ sub set_namaste { my( $dir, $num, $fvalue, $max, $ellipsis )=@_;
 			if $ret || $num eq ".";
 	}
 
-	$fname = "$dir$num=" . namaste_tvalue($fvalue, $max, $ellipsis);
+	$fname = "$dir$num=" .
+		nam_tvalue($fvalue, $portable, $max, $ellipsis);
 
 	return file_value(">$fname", $fvalue);
 }
@@ -74,7 +111,7 @@ use File::Glob ':glob';		# standard use of module, which we need
 # no args means return all
 # args can be file globs
 # returns array of number/fname/value triples (every third elem is number)
-sub get_namaste {
+sub nam_get {
 
 	my $dir = shift @_;
 
@@ -115,6 +152,68 @@ sub get_namaste {
 	return @out;
 }
 
+# xxx unicode friendly??
+our $max_default = 16;		# is there some sense to this? xxx use
+				# fraction of display width maybe?
+
+sub nam_elide { my( $s, $max, $ellipsis )=@_;
+
+	$s	or return undef;
+	$max ||= $max_default;
+	$max !~ /^(\d+)([esmESM]*)([+-]\d+%?)?$/ and
+		return undef;
+	my ($maxlen, $where, $tweak) = ($1, $2, $3);
+
+	$where ||= "e";
+	$where = lc($where);
+
+	$ellipsis ||= ($where eq "m" ? "..." : "..");
+	my $elen = length($ellipsis);
+
+	my ($side, $offset, $percent);		# xxx only used for "m"?
+	if (defined($tweak)) {
+		($side, $offset, $percent) = ($tweak =~ /^([+-])(\d+)(%?)$/);
+	}
+	$side ||= ""; $offset ||= 0; $percent ||= "";
+	# XXXXX finish this! print "side=$side, n=$offset, p=$percent\n";
+
+	my $slen = length($s);
+	return $s
+		if ($slen <= $maxlen);	# doesn't need elision
+
+	my $re;		# we will create a regex to edit the string
+	# length of orig string after that will be left after edit
+	my $left = $maxlen - $elen;
+
+	my $retval = $s;
+	# Example: if $left is 5, then
+	#   if "e" then s/^(.....).*$/$1$ellipsis/
+	#   if "s" then s/^.*(.....)$/$ellipsis$1/
+	#   if "m" then s/^.*(...).*(..)$/$1$ellipsis$2/
+	# In order to make '.' match \n, we use s///s ('s' modifier).
+	if ($where eq "m") {
+		# if middle, we split the string
+		my $half = int($left / 2);
+		$half += 1	# bias larger half to front if $left is odd
+			if ($half > $left - $half);	# xxx test
+		$re = "^(" . ("." x $half) . ").*("
+			. ("." x ($left - $half)) . ")\$";
+			# $left - $half might be zero, but this still works
+		$retval =~ s/$re/$1$ellipsis$2/s;
+	}
+	else {
+		my $dots = "." x $left;
+		$re = ($where eq "e" ? "^($dots).*\$" : "^.*($dots)\$");
+		if ($where eq "e") {
+			$retval =~ s/$re/$1$ellipsis/s;
+		}
+		else {			# else "s"
+			$retval =~ s/$re/$ellipsis$1/s;
+		}
+	}
+	return $retval;
+}
+
 1;
 
 __END__
@@ -125,33 +224,40 @@ File::Namaste - routines to manage NAMe-AS-TExt tags
 
 =head1 SYNOPSIS
 
- use File::Namaste;         # to import routines into a Perl script
+ use File::Namaste;  # to import routines into a Perl script
 
- $stat = set_namaste( $dir, $number, $fvalue, $max, $ellipsis )
-                            # Return empty string on success, else an
-                            # error message.  The first three arguments are
-                            # required; remaining args passed to elide().
-                            # Uses $dir or the current directory.
+ $stat = nam_set($dir, $portable, $number, $fvalue, $max, $ellipsis);
+                     # Return empty string on success, else an error
+                     # message.  The first four arguments required;
+                     # remaining args are passed to nam_elide().
+                     # Uses $dir or the current directory.  To get
+                     # Win32 mapping, set $portable to 1.
 
  # Example: set the directory type and title tag files.
- ($msg = set_namaste(0, "dflat_0.4")
-          || set_namaste(2, "Crime and Punishment"))
-     and die("set_namaste: $msg\n");
+ ($msg = nam_set(0, 0, "dflat_0.4")
+          || nam_set(2, 0, "Crime and Punishment"))
+     and die("nam_set: $msg\n");
 
- @num_nam_val_triples = get_namaste( $dir, $filenameglob, ...)
-                            # Return an array of number/filename/value
-                            # triples (eg, every 3rd elem is number).
-			    # Args give numbers (as file globs) to fetch
-			    # (eg, "0" or "[1-4]") and no args is same as
-			    # "[0-9]".  Uses $dir or the current directory.
+ @num_nam_val_triples = nam_get($dir, $filenameglob, ...);
+                     # Return an array of number/filename/value triples
+                     # (eg, every 3rd elem is number).  Args give numbers
+                     # (as file globs) to fetch # (eg, "0" or "[1-4]")
+                     # and no args is same as "[0-9]".  Uses $dir or the
+                     # current directory.
 
  # Example: fetch all namaste tags and print.
- my @nnv = get_namaste();
+ my @nnv = nam_get();
  while (defined($num = shift(@nnv))) {  # first of triple is tag number;
      $fname = shift(@nnv);              # second is filename derived...
      $fvalue = shift(@nnv);             # from third (the full value)
      print "Tag $num (from $fname): $fvalue\n";
  }
+
+ $transformed_value =       # filename-safe transform of metadata value
+        nam_tvalue( $full_value, $portable, $max, $ellipsis);
+
+ print nam_elide($title, "${displaywidth}m")  # Example: fit long title
+        if length($title) > $displaywidth;    # by eliding from middle
 
 =head1 DESCRIPTION
 
@@ -160,18 +266,27 @@ implements the Namaste (Name as Text) convention for containing a data
 element completely within the content of a file, using as filename an
 approximation of the value preceded by a numeric tag.
 
-The functions C<file_value()> and C<elide()> are general purpose and do
-not rely on Namaste; however, they are used by C<set_namaste()>
-and C<get_namaste()>.
+=head2 nam_elide( $s, $max, $ellipsis )
+
+Take input string $s and return a shorter string with an ellipsis marking
+what was deleted.  The optional $max parameter (default 16) specifies the
+maximum length of the returned string, and may optionally be followed by
+a letter indicating where the deletion should take place:  'e' means the
+end of the string (default), 's' the start of the string, and 'm' the
+middle of the string.  The optional $ellipsis parameter specifies how the
+deleted characters will be represented; it defaults to ".." for 'e' or 's'
+deletion, and to "..." for 'm' deletion.
 
 =head1 SEE ALSO
 
 Directory Description with Namaste Tags
-	L<http://www.cdlib.org/inside/diglib/namaste/namastespec.html>
+    L<https://confluence.ucop.edu/display/Curation/Namaste>
+
+L<nam(1p)>
 
 =head1 HISTORY
 
-This is an alpha version of Namaste tools.  It is written in Perl.
+This is a beta version of Namaste tools.  It is written in Perl.
 
 =head1 AUTHOR
 
@@ -179,7 +294,7 @@ John A. Kunze I<jak at ucop dot edu>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2009 UC Regents.  Open source Apache License, Version 2.
+Copyright 2009-2010 UC Regents.  Open source BSD license.
 
 =head1 PREREQUISITES
 
