@@ -8,7 +8,7 @@ require Exporter;
 our @ISA = qw(Exporter);
 
 our $VERSION;
-$VERSION = sprintf "%d.%02d", q$Name: Release-0-20 $ =~ /Release-(\d+)-(\d+)/;
+$VERSION = sprintf "%d.%02d", q$Name: Release-0-21 $ =~ /Release-(\d+)-(\d+)/;
 
 our @EXPORT = qw(
 	nam_get nam_set nam_elide
@@ -63,6 +63,7 @@ sub num2label { my $num = shift;
 	return $namaste_labels[$num];			# normal return
 }
 
+
 # xxx should create shadow tag files with highly deterministic names?
 #     easier for a machine to fine a specific element
 my $dtname = ".dir_type";	# canonical name of directory type file
@@ -75,6 +76,10 @@ my $dtname = ".dir_type";	# canonical name of directory type file
 # xxx .=who
 # xxx .=why
 
+# xxx to do
+# N means create N=...
+# .N means create or add to .=wh{o,at,en,ere}
+# N. means do both N and .N
 
 # $num and $fvalue required
 # returns empty string on success, otherwise a diagnostic
@@ -230,8 +235,10 @@ File::Namaste - routines to manage NAMe-AS-TExt tags
                      # Return empty string on success, else an error
                      # message.  The first four arguments required;
                      # remaining args are passed to nam_elide().
-                     # Uses $dir or the current directory.  To get
-                     # Win32 mapping, set $portable to 1.
+                     # Uses $dir or the current directory.  Specify
+		     # $portable as undef to get best character mapping
+		     # for the platform.  To request the more general
+		     # Win32 mapping, set $portable to 1.
 
  # Example: set the directory type and title tag files.
  ($msg = nam_set(0, 0, "dflat_0.4")
@@ -282,7 +289,7 @@ deletion, and to "..." for 'm' deletion.
 Directory Description with Namaste Tags
     L<https://confluence.ucop.edu/display/Curation/Namaste>
 
-L<nam(1p)>
+L<nam(1)>
 
 =head1 HISTORY
 
