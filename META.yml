@@ -1,7 +1,7 @@
 --- #YAML:1.0
 name:                File-Namaste
-version:             0.22
-abstract:            command and routines to manage NAMe-AS-TExt tags
+version:             0.23
+abstract:            "nam" command and routines to manage NAMe-AS-TExt tags
 license:             BSD
 author:              
     - John A. Kunze <jak@ucop.edu>
