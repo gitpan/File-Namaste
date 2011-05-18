@@ -53,7 +53,7 @@ sub filval { my( $file, $value )=@_;	# $file must begin with >, <, or >>
 
 #### end boilerplate
 
-use File::Namaste;
+use File::Namaste ':all';
 
 { 	# Namaste.pm tests
 
@@ -61,13 +61,13 @@ remake_td();
 
 my $portable = undef;	# need undef (not 0) so $portable_default works
 my $namy = "noid_0.6";
-is nam_set($td, $portable, 0, "pairtree_0.3"), "", 'short namaste tag';
-is nam_set($td, $portable, 0, $namy), "", 'second, repeating namaste tag';
+is nam_add($td, $portable, 0, "pairtree_0.3"), "", 'short namaste tag';
+is nam_add($td, $portable, 0, $namy), "", 'second, repeating namaste tag';
 
 my $namx = "Test/line:!
   Adventures of HuckleBerry Finn";
 
-is nam_set($td, $portable, 1, $namx), "", 'longer stranger tag';
+is nam_add($td, $portable, 1, $namx), "", 'longer stranger tag';
 
 my @namtags = nam_get($td);
 ok scalar(@namtags) eq 9, 'got correct number of tags';

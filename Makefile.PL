@@ -9,7 +9,7 @@ WriteMakefile(
     AUTHOR              => 'John A. Kunze <jak@ucop.edu>',
     VERSION_FROM        => 'VERSION',
     ABSTRACT            => 'nam (command) and routines to manage NAMe-AS-TExt tags',
-    ($ExtUtils::MakeMaker::VERSION >= 6.3002
+    ($ExtUtils::MakeMaker::VERSION ge 6.3002
       ? ('LICENSE'=> 'BSD')
       : ()),
     PM			=> {

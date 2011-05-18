@@ -1,2 +1,2 @@
-$VERSION = '0.25';
+$VERSION = 'v0.260.0';
 print $VERSION, "\n";
