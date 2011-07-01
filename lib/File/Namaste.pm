@@ -9,7 +9,7 @@ our @ISA = qw(Exporter);
 
 our $VERSION;
 #$VERSION = sprintf "%d.%02d", q$Name: Release-0-25 $ =~ /Release-(\d+)-(\d+)/;
-$VERSION = sprintf "%s", q$Name: Release-v0.260.0$ =~ /Release-(v\d+\.\d+\.\d+)/;
+$VERSION = sprintf "%s", q$Name: Release-v0.261.0$ =~ /Release-(v\d+\.\d+\.\d+)/;
 
 our @EXPORT = qw();
 #our @EXPORT_OK = qw();
@@ -183,7 +183,8 @@ our $max_default = 16;		# is there some sense to this? xxx use
 sub nam_elide { my( $s, $max, $ellipsis )=@_;
 
 	$s	or return undef;
-	$max ||= $max_default;
+	# $max can be zero (0) so that nam_add() can ask for no elision.
+	defined($max)		or $max = $max_default;
 	$max !~ /^(\d+)([esmESM]*)([+-]\d+%?)?$/ and
 		return undef;
 	my ($maxlen, $where, $tweak) = ($1, $2, $3);
@@ -203,7 +204,7 @@ sub nam_elide { my( $s, $max, $ellipsis )=@_;
 
 	my $slen = length($s);
 	return $s
-		if ($slen <= $maxlen);	# doesn't need elision
+		if ($slen <= $maxlen || $maxlen == 0);	# doesn't need elision
 
 	my $re;		# we will create a regex to edit the string
 	# length of orig string after that will be left after edit

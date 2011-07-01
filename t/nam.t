@@ -151,6 +151,15 @@ $x = `$cmd get 2`;
 chop($x);chop($x);
 is $x, 'Adventures of Huckleberry Finn', 'get of long "what" value';
 
+$x = `$cmd add 8 "Adventures of Huckleberry Finn" 0`;
+chop($x);
+is $x, "", 'add of long "8" value, no elision';
+
+$x = `$cmd -vm anvl get 8`;
+chop($x);chop($x);
+like $x, qr/8=Adventures of Huckleberry Finn/,
+	'get of long "8" value, no elision';
+
 $x = `$cmd -vm anvl get 2`;
 chop($x);
 like $x, '/2=Adven___ Finn/', 'get filename with "-m anvl" and -v comment';
