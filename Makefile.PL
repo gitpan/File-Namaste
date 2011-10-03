@@ -8,7 +8,7 @@ WriteMakefile(
     NAME                => 'File::Namaste',
     AUTHOR              => 'John A. Kunze <jak@ucop.edu>',
     VERSION_FROM        => 'VERSION',
-    ABSTRACT            => 'nam (command) and routines to manage NAMe-AS-TExt tags',
+    ABSTRACT            => 'nam command and routines to manage NAMe-AS-TExt tags',
     ($ExtUtils::MakeMaker::VERSION ge 6.3002
       ? ('LICENSE'=> 'BSD')
       : ()),
