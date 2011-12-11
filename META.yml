@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               File-Namaste
-version:            1.00
+version:            1.01
 abstract:           nam command and routines to manage NAMe-AS-TExt tags
 author:
     - John A. Kunze <jak@ucop.edu>
